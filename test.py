@@ -19,5 +19,7 @@ print(train_w)
 print(true_w)
 print(y.shape)
 
-a = [1, 2, 3] - 5
+a = np.asarray(np.arange(20)).reshape(4,5)
 print(a)
+
+print(a[0:3, :])

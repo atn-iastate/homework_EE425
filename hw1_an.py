@@ -81,17 +81,22 @@ y = airfoil[:, 5].reshape(len(airfoil), )
 # training
 
 train_w = [0, 0, 0, 0, 0, 0]
-max_iter = 100000
-learning_rate = 1e-11
 
-for i in range(max_iter):
-    gradient = np.dot(np.dot(np.transpose(x), x), train_w) - np.dot(np.transpose(x), y)
-    train_w = train_w - learning_rate * gradient
 
-error = np.linalg.norm(y - np.dot(x, train_w))**2 / len(airfoil)
+def gd_lreg(x, y, initial_w, max_iter, learning_rate):
 
-print(train_w)
-print("Mean square error of vanilla Gradient Descent:", error)
+    train_w = initial_w
+    for i in range(max_iter):
+        gradient = np.dot(np.dot(np.transpose(x), x), train_w) - np.dot(np.transpose(x), y)
+        train_w = train_w - learning_rate * gradient
+
+    error = np.linalg.norm(y - np.dot(x, train_w))**2 / len(airfoil)
+
+    print("Estimates of parameters: ", train_w)
+    print("Mean square error:", error)
+
+
+gd_lreg(x, y, train_w, max_iter=100000, learning_rate=1e-11)
 
 # Extra credit: standardizing the features
 
@@ -111,11 +116,35 @@ train_w = np.zeros(6)
 standard_x = np.hstack((standard_x, intercept))
 max_iter = 1000
 learning_rate = 0.0001
-for i in range(max_iter):
-    gradient = np.dot(np.dot(np.transpose(standard_x), standard_x), train_w) - np.dot(np.transpose(standard_x), y)
-    train_w = train_w - learning_rate * gradient
 
-error = np.linalg.norm(y - np.dot(standard_x, train_w))**2 / len(airfoil)
+gd_lreg(standard_x, y, train_w, max_iter, learning_rate)
 
-print(train_w)
-print("Mean square error of Gradient Descent with standardized features:", error)
+# Extra credit: applying Stochastic Gradient Descent
+
+
+def stochastic_gd_lreg(x, y, initial_w, batch_size, learning_rate):
+
+    train_w = initial_w
+    i = 0
+    while i < len(x):
+        last_index = min(i + batch_size, len(x))
+        batch_x = x[i:last_index, :]
+        batch_y = y[i:last_index]
+        gradient = np.dot(np.dot(np.transpose(batch_x), batch_x), train_w) - np.dot(np.transpose(batch_x), batch_y)
+        train_w = train_w - learning_rate * gradient
+        i = i + batch_size
+    error = np.linalg.norm(y - np.dot(x, train_w))**2 / len(airfoil)
+
+    print("Estimates of parameters: ", train_w)
+    print("Mean square error:", error)
+
+
+train_w = np.zeros(6)
+
+stochastic_gd_lreg(standard_x, y, initial_w=train_w, batch_size=1, learning_rate=0.001)
+stochastic_gd_lreg(standard_x, y, initial_w=train_w, batch_size=10, learning_rate=0.001)
+stochastic_gd_lreg(standard_x, y, initial_w=train_w, batch_size=50, learning_rate=0.001)
+stochastic_gd_lreg(standard_x, y, initial_w=train_w, batch_size=200, learning_rate=0.001)
+stochastic_gd_lreg(standard_x, y, initial_w=train_w, batch_size=400, learning_rate=0.001)
+stochastic_gd_lreg(standard_x, y, initial_w=train_w, batch_size=600, learning_rate=0.001)
+stochastic_gd_lreg(standard_x, y, initial_w=train_w, batch_size=800, learning_rate=0.001)
