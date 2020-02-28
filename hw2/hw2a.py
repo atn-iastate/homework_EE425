@@ -5,59 +5,30 @@ import math
 
 class GDAModel:
 
-    def __init__(self, mu0, mu1, cov, phi):
+    def __init__(self, mu0, mu1, phi):
         self.mu0 = mu0
         self.mu1 = mu1
-        self.cov = cov
         self.phi = phi
-        self.det_cov = np.linalg.det(cov)
         self.no_of_feature = mu0.shape[0]
-
-    def compute_p_y(self, row_x):
-
-        x = np.transpose(row_x)  # since input is a row
-
-        exponential_term_y0 = -1 / 2 * np.dot(np.dot(np.transpose(x - self.mu0), np.linalg.inv(self.cov)),
-                                              (x - self.mu0))
-        exponential_term_y1 = -1 / 2 * np.dot(np.dot(np.transpose(x - self.mu1), np.linalg.inv(self.cov)),
-                                              (x - self.mu1))
-
-        p_y_0 = 1 / ((2 * math.pi) ** (self.no_of_feature / 2) * math.sqrt(self.det_cov)) * np.exp(exponential_term_y0)
-        p_y_1 = 1 / ((2 * math.pi) ** (self.no_of_feature / 2) * math.sqrt(self.det_cov)) * np.exp(exponential_term_y1)
-
-        return p_y_0, p_y_1
 
     def predict(self, x):
 
         y_predict = np.zeros(x.shape[0])
         for i in range(x.shape[0]):
-            p_y_0 = self.compute_p_y(x[i, :])[0]
-            p_y_1 = self.compute_p_y(x[i, :])[1]
-
-            if p_y_0 < p_y_1:
+            if np.linalg.norm(x[i,:] - self.mu0) > np.linalg.norm(x[i,:] - self.mu1):
                 y_predict[i] = 1
 
         return y_predict
 
     @staticmethod
-    def compute_variance(x, y, mu0, mu1):
-
-        if y.shape[0] > 0:
-            var = (np.sum((x[np.where(y == 0)[0]] - mu0) ** 2) + np.sum((x[np.where(y == 1)[0]] - mu1) ** 2)) / y.shape[
-                0]
-            return var
-        else:
-            return None
-
-    @staticmethod
     def gda_estimate(x, y):
 
         if y.shape[0] == 0:
-            return GDAModel(None, None, None, None)
+            return GDAModel(None, None, None)
         else:
             estimate_phi = np.sum(y) / y.shape[0]
 
-        if np.sum(y) < y.shape[0]:
+        if np.sum(y) < y.shape[0]:  # will only work if y is Bernoulli distributed
             estimate_mu0 = np.sum(x[np.where(y == 0)[0], :], axis=0) / np.where(y == 0)[0].shape[0]
         else:
             estimate_mu0 = None
@@ -69,10 +40,8 @@ class GDAModel:
 
         # initialize covariance matrix with zeroes entries of dimension n x n
         estimate_cov = np.zeros(x.shape[1] ** 2).reshape(x.shape[1], x.shape[1])
-        for i in range(x.shape[1]):
-            estimate_cov[i, i] = GDAModel.compute_variance(x[:, i], y, estimate_mu0[i], estimate_mu1[i])
 
-        model = GDAModel(estimate_mu0, estimate_mu1, estimate_cov, estimate_phi)
+        model = GDAModel(estimate_mu0, estimate_mu1, estimate_phi)
 
         return model
 
@@ -83,7 +52,7 @@ class LogisticModel:
         self.parameters = parameters
 
     @staticmethod
-    def logistic_estimate(self, x, y, max_iter):
+    def logistic_estimate(x, y, max_iter):
         learn_rate = (1e-2) / y.shape[0]
         theta_hat = np.ones(x.shape[1])
 
@@ -94,9 +63,9 @@ class LogisticModel:
         model = LogisticModel(theta_hat)
         return model
 
-    def predict(x, y):
+    def predict(self, x):
 
-        hx = (1 / (1 + np.exp(-np.dot(x, theta))))
+        hx = (1 / (1 + np.exp(-np.dot(x, self.parameters))))
         y_hat = np.zeros(hx.shape[0])
 
         for i in range(0, len(hx)):
